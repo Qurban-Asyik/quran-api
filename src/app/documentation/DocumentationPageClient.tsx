@@ -121,7 +121,7 @@ export default function DocumentationPageClient() {
                   <h3 className="text-lg font-medium mb-4">Getting Available Languages</h3>
                   <p className="mb-2">You can get a list of all available languages using the following endpoint:</p>
                   <div className="bg-muted p-3 rounded-md font-mono text-sm">
-                    GET https://alquran-api.pages.dev/api/quran/languages
+                    GEThttps://quran.qurbanasyik.com/api/quran/languages
                   </div>
                   <p className="mt-4 text-sm text-muted-foreground">
                     This will return a JSON object with an array of available languages and their details.

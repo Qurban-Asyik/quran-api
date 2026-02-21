@@ -8,7 +8,7 @@ A comprehensive RESTful API for accessing the Holy Quran with translations in mu
 
 ## 🌐 Live Demo
 
-Visit the live API and documentation at [https://alquran-api.pages.dev](https://alquran-api.pages.dev)
+Visit the live API and documentation at [https://quran.qurbanasyik.com](https://quran.qurbanasyik.com)
 
 ## ✨ Features
 
@@ -26,7 +26,7 @@ Visit the live API and documentation at [https://alquran-api.pages.dev](https://
 
 
 
-[https://alquran-api.pages.dev/api/quran](https://alquran-api.pages.dev/api/quran)
+[https://quran.qurbanasyik.com/api/quran](https://quran.qurbanasyik.com/api/quran)
 
 ### Endpoints
 
@@ -61,33 +61,33 @@ Available language codes:
 #### Get all surahs in English
 
 
-GET [https://alquran-api.pages.dev/api/quran?lang=en](https://alquran-api.pages.dev/api/quran?lang=en)
+GET [https://quran.qurbanasyik.com/api/quran?lang=en](https://quran.qurbanasyik.com/api/quran?lang=en)
 
 
 #### Get Surah Al-Fatihah in Arabic
 
 
-GET [https://alquran-api.pages.dev/api/quran/surah/1?lang=ar](https://alquran-api.pages.dev/api/quran/surah/1?lang=ar)
+GET [https://quran.qurbanasyik.com/api/quran/surah/1?lang=ar](https://quran.qurbanasyik.com/api/quran/surah/1?lang=ar)
 
 
 #### Get a specific verse
 
 
-GET [https://alquran-api.pages.dev/api/quran/surah/1/verse/1?lang=en](https://alquran-api.pages.dev/api/quran/surah/1/verse/1?lang=en)
+GET [https://quran.qurbanasyik.com/api/quran/surah/1/verse/1?lang=en](https://quran.qurbanasyik.com/api/quran/surah/1/verse/1?lang=en)
 
 
 
 #### Search for "mercy" in the Quran
 
 
-GET [https://alquran-api.pages.dev/api/quran/search?q=mercy&lang=en](https://alquran-api.pages.dev/api/quran/search?q=mercy&lang=en)
+GET [https://quran.qurbanasyik.com/api/quran/search?q=mercy&lang=en](https://quran.qurbanasyik.com/api/quran/search?q=mercy&lang=en)
 
 
 
 #### Get available languages
 
 
-GET [https://alquran-api.pages.dev/api/quran/languages](https://alquran-api.pages.dev/api/quran/languages)
+GET [https://quran.qurbanasyik.com/api/quran/languages](https://quran.qurbanasyik.com/api/quran/languages)
 
 
 
@@ -155,7 +155,7 @@ quran-api/
 
 ## 📦 Deployment
 
-This project is deployed on [Vercel](https://vercel.com) and is available at [https://alquran-api.pages.dev](https://alquran-api.pages.dev).
+This project is deployed on [Vercel](https://vercel.com) and is available at [https://quran.qurbanasyik.com](https://quran.qurbanasyik.com).
 
 To deploy your own instance:
 
@@ -171,7 +171,7 @@ To deploy your own instance:
 
 ```javascript
 // Get all surahs in English
-fetch('https://alquran-api.pages.dev/api/quran?lang=en')
+fetch('https://quran.qurbanasyik.com/api/quran?lang=en')
   .then(response => response.json())
   .then(data => {
     console.log(data);
@@ -196,7 +196,7 @@ function QuranViewer() {
       try {
         setLoading(true);
         const response = await fetch(
-          'https://alquran-api.pages.dev/api/quran/surah/1?lang=en'
+          'https://quran.qurbanasyik.com/api/quran/surah/1?lang=en'
         );
         
         if (!response.ok) {
