@@ -26,7 +26,7 @@ jobs:
           set -e
 
           # Log file with timestamp
-          LOG_FILE="/root/frontend/quran-api/deploy-production-$(date +%Y%m%d-%H%M%S).log"
+          LOG_FILE="/root/backend/quran-api/deploy-production-$(date +%Y%m%d-%H%M%S).log"
 
           # Redirect all output to log file
           exec > >(tee -a "$LOG_FILE") 2>&1
@@ -36,8 +36,8 @@ jobs:
           echo "=========================================="
 
           # Assuming the project is deployed here
-          mkdir -p /root/frontend/quran-api
-          cd /root/frontend/quran-api
+          mkdir -p /root/backend/quran-api
+          cd /root/backend/quran-api
 
           # Git operations
           echo "[$(date)] Updating code from repository..."
@@ -101,7 +101,7 @@ jobs:
           echo "=========================================="
 
           # Create a status file
-          echo "SUCCESS:$(date)" > /root/frontend/quran-api/deploy-status.txt
+          echo "SUCCESS:$(date)" > /root/backend/quran-api/deploy-status.txt
           DEPLOY_SCRIPT
 
           chmod +x deploy_production.sh
@@ -126,7 +126,7 @@ jobs:
             -o ConnectTimeout=30 \
             -p ${{ secrets.SERVER_PORT }} \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-            "mkdir -p /root/frontend/quran-api && rm -f /root/frontend/quran-api/deploy-status.txt"
+            "mkdir -p /root/backend/quran-api && rm -f /root/backend/quran-api/deploy-status.txt"
 
           # Execute deployment in background with nohup
           sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
@@ -157,7 +157,7 @@ jobs:
               -o ConnectTimeout=30 \
               -p ${{ secrets.SERVER_PORT }} \
               ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-              "cat /root/frontend/quran-api/deploy-status.txt 2>/dev/null || echo 'PENDING'")
+              "cat /root/backend/quran-api/deploy-status.txt 2>/dev/null || echo 'PENDING'")
 
             if echo "$STATUS" | grep -q "SUCCESS"; then
               echo ""
@@ -173,7 +173,7 @@ jobs:
                 -o ConnectTimeout=30 \
                 -p ${{ secrets.SERVER_PORT }} \
                 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-                "ls -t /root/frontend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 30"
+                "ls -t /root/backend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 30"
 
               # Show container status
               echo ""
@@ -219,7 +219,7 @@ jobs:
             -o ConnectTimeout=30 \
             -p ${{ secrets.SERVER_PORT }} \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-            "ls -t /root/frontend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 100"
+            "ls -t /root/backend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 100"
 
           echo ""
           echo "🐳 Current container status:"
