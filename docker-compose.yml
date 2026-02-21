@@ -1,0 +1,16 @@
+services:
+  quran-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quran-api
+    ports:
+      - "9229:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

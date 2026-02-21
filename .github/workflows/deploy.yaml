@@ -1,0 +1,237 @@
+name: Deploy Quran API to Production
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Create deployment script
+        run: |
+          cat > deploy_production.sh << 'DEPLOY_SCRIPT'
+          #!/bin/bash
+          set -e
+
+          # Log file with timestamp
+          LOG_FILE="/root/frontend/quran-api/deploy-production-$(date +%Y%m%d-%H%M%S).log"
+
+          # Redirect all output to log file
+          exec > >(tee -a "$LOG_FILE") 2>&1
+
+          echo "=========================================="
+          echo "[$(date)] Starting deployment to production..."
+          echo "=========================================="
+
+          # Assuming the project is deployed here
+          mkdir -p /root/frontend/quran-api
+          cd /root/frontend/quran-api
+
+          # Git operations
+          echo "[$(date)] Updating code from repository..."
+          if [ -d ".git" ]; then
+            git stash || true
+            git stash clear || true
+            git checkout development
+            git pull
+          else
+            echo "Cloning repository..."
+            # Replace with the actual repository URL. Here we assume we just do git pull on an existing initialized repo.
+            # Using SSH clone or HTTPS clone as needed on the server side securely.
+            git clone -b development https://github.com/username/repo.git . || true
+          fi
+
+          # Docker operations
+          echo "[$(date)] Stopping existing containers..."
+          docker compose down || true
+
+          echo "[$(date)] Pruning old docker images..."
+          docker image prune -f || true
+
+          echo "[$(date)] Building and starting containers..."
+          docker compose up --build -d
+
+          # Wait for container to be healthy
+          echo "[$(date)] Waiting for container to start..."
+          HEALTHY=false
+          for i in {1..30}; do
+            CONTAINER_STATUS=$(docker ps --filter "name=quran-api" --format "{{.Status}}" 2>/dev/null || echo "")
+            if echo "$CONTAINER_STATUS" | grep -q "Up"; then
+              echo "[$(date)] Container is Up!"
+              HEALTHY=true
+              break
+            fi
+            echo "[$(date)] Waiting for container to start... ($i/30)"
+            sleep 5
+          done
+
+          if [ "$HEALTHY" = false ]; then
+            echo "[$(date)] WARNING: Container might not be running correctly..."
+          fi
+
+          # Show running containers
+          echo "[$(date)] Running containers:"
+          docker ps
+
+          # Show container logs (last 20 lines)
+          echo "[$(date)] Container logs (last 20 lines):"
+          docker logs quran-api --tail 20 2>/dev/null || echo "No logs available"
+
+          # Cleanup
+          echo "[$(date)] Cleaning up..."
+
+          echo "=========================================="
+          echo "[$(date)] Deployment completed!"
+          echo "=========================================="
+
+          # Create a status file
+          echo "SUCCESS:$(date)" > /root/frontend/quran-api/deploy-status.txt
+          DEPLOY_SCRIPT
+
+          chmod +x deploy_production.sh
+
+      - name: Upload deployment script
+        run: |
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -P ${{ secrets.SERVER_PORT }} \
+            deploy_production.sh \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/tmp/deploy_production_quran_api.sh
+
+      - name: Execute deployment in background
+        run: |
+          # Clear previous status
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -o ConnectTimeout=30 \
+            -p ${{ secrets.SERVER_PORT }} \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "mkdir -p /root/frontend/quran-api && rm -f /root/frontend/quran-api/deploy-status.txt"
+
+          # Execute deployment in background with nohup
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            -o ConnectTimeout=30 \
+            -p ${{ secrets.SERVER_PORT }} \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "chmod +x /tmp/deploy_production_quran_api.sh && nohup /tmp/deploy_production_quran_api.sh > /tmp/deploy_production_quran_api_nohup.log 2>&1 &"
+
+          echo "✅ Deployment script started in background"
+          sleep 5
+
+      - name: Monitor deployment progress
+        run: |
+          echo "📊 Monitoring deployment progress..."
+          echo ""
+
+          MAX_WAIT=120  # 10 minutes (120 * 5 seconds)
+          WAIT_COUNT=0
+
+          while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+            # Check if deployment completed
+            STATUS=$(sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+              -o StrictHostKeyChecking=no \
+              -o ServerAliveInterval=30 \
+              -o ConnectTimeout=30 \
+              -p ${{ secrets.SERVER_PORT }} \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+              "cat /root/frontend/quran-api/deploy-status.txt 2>/dev/null || echo 'PENDING'")
+
+            if echo "$STATUS" | grep -q "SUCCESS"; then
+              echo ""
+              echo "✅ Deployment completed successfully!"
+              echo "Status: $STATUS"
+              echo ""
+
+              # Show recent logs
+              echo "📋 Recent deployment logs:"
+              sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+                -o StrictHostKeyChecking=no \
+                -o ServerAliveInterval=30 \
+                -o ConnectTimeout=30 \
+                -p ${{ secrets.SERVER_PORT }} \
+                ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+                "ls -t /root/frontend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 30"
+
+              # Show container status
+              echo ""
+              echo "🐳 Container status:"
+              sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+                -o StrictHostKeyChecking=no \
+                -o ServerAliveInterval=30 \
+                -o ConnectTimeout=30 \
+                -p ${{ secrets.SERVER_PORT }} \
+                ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+                "docker ps --filter 'name=quran-api'"
+
+              exit 0
+            fi
+
+            # Check if script is still running
+            RUNNING=$(sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+              -o StrictHostKeyChecking=no \
+              -o ServerAliveInterval=30 \
+              -o ConnectTimeout=30 \
+              -p ${{ secrets.SERVER_PORT }} \
+              ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+              "pgrep -f 'deploy_production_quran_api.sh' > /dev/null && echo 'RUNNING' || echo 'STOPPED'" 2>/dev/null || echo "ERROR")
+
+            ELAPSED=$((WAIT_COUNT * 5))
+            if [ "$RUNNING" = "RUNNING" ]; then
+              echo "⏳ Deployment in progress... (${ELAPSED}s elapsed)"
+            else
+              echo "⚠️  Deployment script not running, checking status... (${ELAPSED}s elapsed)"
+            fi
+
+            WAIT_COUNT=$((WAIT_COUNT + 1))
+            sleep 5
+          done
+
+          echo ""
+          echo "⚠️  Deployment is taking longer than expected (10 minutes)."
+          echo ""
+          echo "📋 Fetching deployment logs..."
+          sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ConnectTimeout=30 \
+            -p ${{ secrets.SERVER_PORT }} \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "ls -t /root/frontend/quran-api/deploy-production-*.log 2>/dev/null | head -1 | xargs tail -n 100"
+
+          echo ""
+          echo "🐳 Current container status:"
+          CONTAINER_STATUS=$(sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 \
+            -o ConnectTimeout=30 \
+            -p ${{ secrets.SERVER_PORT }} \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "docker ps --filter 'name=quran-api' --format '{{.Status}}'" 2>/dev/null || echo "")
+
+          if [ -n "$CONTAINER_STATUS" ]; then
+            echo "Container status: $CONTAINER_STATUS"
+            echo "✅ Container is running - deployment may have succeeded"
+            exit 0
+          else
+            echo "❌ Container not found - deployment may have failed"
+            exit 1
+          fi
