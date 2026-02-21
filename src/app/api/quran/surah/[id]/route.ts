@@ -7,7 +7,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
   try {
     const { searchParams } = new URL(request.url)
     let lang = searchParams.get("lang") || "en"
-    const baseUrl = new URL(request.url).origin
+    
+    // Construct base URL from headers, as request.url might be localhost internally
+    const protocol = request.headers.get("x-forwarded-proto") || "https"
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || new URL(request.url).host
+    const baseUrl = `${protocol}://${host}`
 
     // Get fallback language if requested one is not available
     lang = await getFallbackLanguage(lang, baseUrl)
