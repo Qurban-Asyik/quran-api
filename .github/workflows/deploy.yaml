@@ -44,24 +44,28 @@ jobs:
           if [ -d ".git" ]; then
             git stash || true
             git stash clear || true
-            git checkout development
+            git checkout main
             git pull
           else
-            echo "Cloning repository..."
-            # Replace with the actual repository URL. Here we assume we just do git pull on an existing initialized repo.
-            # Using SSH clone or HTTPS clone as needed on the server side securely.
-            git clone -b development https://github.com/username/repo.git . || true
+            echo "Initializing repository..."
+            # Cannot clone into a non-empty directory, so we init and pull instead
+            git init
+            # NOTE: this URL should be replaced with the actual repository URL securely
+            git remote add origin https://github.com/username/repo.git || git remote set-url origin https://github.com/username/repo.git
+            git fetch
+            git checkout -t origin/main || git checkout main
+            git pull origin main
           fi
 
           # Docker operations
           echo "[$(date)] Stopping existing containers..."
-          docker compose down || true
+          docker compose -f docker-compose.yml down || true
 
           echo "[$(date)] Pruning old docker images..."
           docker image prune -f || true
 
           echo "[$(date)] Building and starting containers..."
-          docker compose up --build -d
+          docker compose -f docker-compose.yml up --build -d
 
           # Wait for container to be healthy
           echo "[$(date)] Waiting for container to start..."
