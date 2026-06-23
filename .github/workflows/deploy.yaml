@@ -108,13 +108,12 @@ jobs:
 
       - name: Upload deployment script
         run: |
-          sshpass -p "${{ secrets.SERVER_PASSWORD }}" scp \
+          cat deploy_production.sh | sshpass -p "${{ secrets.SERVER_PASSWORD }}" ssh \
             -o StrictHostKeyChecking=no \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=10 \
-            -P ${{ secrets.SERVER_PORT }} \
-            deploy_production.sh \
-            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/tmp/deploy_production_quran_api.sh
+            -p ${{ secrets.SERVER_PORT }} \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cat > /tmp/deploy_production_quran_api.sh"
 
       - name: Execute deployment in background
         run: |
