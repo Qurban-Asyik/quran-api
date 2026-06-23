@@ -70,7 +70,7 @@ export async function fetchJsonFile(fileName: string, baseUrl?: string): Promise
     let url = baseUrl ? `${baseUrl}/${fileName}` : `/${fileName}`
 
     // When running on the server (like in Docker), using the external host from headers
-    // might fail if it points to a mapped port (e.g., host:9229 -> container:3000).
+    // might fail if it points to a mapped port (e.g., host:8301 -> container:3000).
     // We can override it with an internal URL or environment variable.
     if (typeof window === "undefined") {
       if (process.env.API_BASE_URL) {
