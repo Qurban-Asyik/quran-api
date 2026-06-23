@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: quran-api
     ports:
-      - "8301:3000"
+      - "8301:8301"
     restart: unless-stopped
     environment:
       - NODE_ENV=production
