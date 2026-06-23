@@ -1,0 +1,11 @@
+.next
+node_modules
+.git
+.env*.local
+.vercel
+*.log
+Dockerfile
+docker-compose.yml
+.dockerignore
+.github
+deploy_*.sh
